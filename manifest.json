@@ -1,5 +1,23 @@
-document.addEventListener('DOMContentLoaded',()=>{
-const map=L.map('map').setView([38.2324,-90.5629],13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./service-worker.js');}
-});
+{
+  "name": "HUNTGRID",
+  "short_name": "HUNTGRID",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1f1a",
+  "theme_color": "#e8a020",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

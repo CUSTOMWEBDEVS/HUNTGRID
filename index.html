@@ -2,30 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>HUNTGRID</title>
 
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <meta name="theme-color" content="#e8a020">
 </head>
 
 <body>
   <header class="app-header">
-    <h1>HUNTGRID</h1>
-    <span id="gpsStatus">GPS: Acquiring</span>
+    <div>
+      <h1>HUNTGRID</h1>
+      <span class="subtitle">Offline Hunting Map</span>
+    </div>
+    <span id="gpsStatus" class="gps-pill">GPS: Acquiring</span>
   </header>
 
   <main id="app">
     <section id="mapScreen" class="screen active">
       <div id="map"></div>
+
+      <button id="layerBtn" class="map-btn top-right">Layers</button>
       <button id="recenterBtn" class="map-btn bottom-right-2">GPS</button>
       <button id="dropWaypointBtn" class="fab">+</button>
+    </section>
+
+    <section id="waypointsScreen" class="screen panel">
+      <h2>Waypoints</h2>
+      <div id="waypointList" class="list"></div>
+    </section>
+
+    <section id="tracksScreen" class="screen panel">
+      <h2>Tracks</h2>
+      <div class="button-row">
+        <button id="startTrackBtn">Start Track</button>
+        <button id="stopTrackBtn">Stop Track</button>
+      </div>
+      <div id="trackStatus" class="muted">No active track.</div>
+      <div id="trackList" class="list"></div>
+    </section>
+
+    <section id="syncScreen" class="screen panel">
+      <h2>Sync</h2>
+      <button id="syncNowBtn">Sync Now</button>
+      <p id="syncStatus" class="muted">Not synced yet.</p>
+    </section>
+
+    <section id="settingsScreen" class="screen panel">
+      <h2>Settings</h2>
+
+      <label for="gasUrl">Google Apps Script URL</label>
+      <input id="gasUrl" type="text" value="https://script.google.com/macros/s/AKfycbwtEXfXwhHlhDb4UtMS8kTQA3MSERfNMZFF8BD5XERGyJ0Dv_-LP4hcn-AVWAKClXij/exec">
+
+      <label for="gasToken">Auth Token</label>
+      <input id="gasToken" type="password" placeholder="Enter your Apps Script token">
+
+      <button id="saveSettingsBtn">Save Settings</button>
+      <button id="clearDataBtn" class="danger">Clear Local Data</button>
     </section>
   </main>
 
   <nav class="bottom-nav">
-    <button data-screen="mapScreen">Map</button>
+    <button class="active" data-screen="mapScreen">Map</button>
+    <button data-screen="waypointsScreen">Waypoints</button>
+    <button data-screen="tracksScreen">Tracks</button>
+    <button data-screen="syncScreen">Sync</button>
+    <button data-screen="settingsScreen">Settings</button>
   </nav>
 
   <div id="toast"></div>
