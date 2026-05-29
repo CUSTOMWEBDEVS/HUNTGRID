@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HUNTGRID</title>
-<link rel="manifest" href="./manifest.json">
-<link rel="stylesheet" href="./css/app.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-</head>
-<body>
-<header class="app-header"><h1>HUNTGRID</h1><span id="gpsStatus">GPS: Acquiring</span></header>
-<main id="app"><section id="mapScreen" class="screen active"><div id="map"></div><button id="layerBtn" class="map-btn top-right">Layers</button><button id="recenterBtn" class="map-btn bottom-right-2">GPS</button><button id="dropWaypointBtn" class="fab">+</button></section></main>
-<nav class="bottom-nav"><button data-screen="mapScreen">Map</button></nav>
-<div id="toast"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./js/app.js"></script>
-</body></html>
+const CACHE_VERSION = 'huntgrid-v1.0.0';
+
+self.addEventListener('install', event => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', event => {
+  return;
+});
