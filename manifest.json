@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#e8a020" />
+  <meta name="description" content="HuntTrack offline-capable hunting map and scouting PWA." />
+  <title>HuntTrack</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQgpNmJw4vFfRq4xU+3KkJlvjZN1wM=" crossorigin="" />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>HuntTrack</h1>
+        <span id="activeLayerLabel" class="small-label">Street</span>
+      </div>
+      <div class="status-stack">
+        <span id="gpsStatus" class="gps-status acquiring"><span></span>Acquiring</span>
+        <span id="syncMiniStatus" class="small-label">Local</span>
+      </div>
+    </header>
+
+    <main id="mainView" class="main-view">
+      <section id="mapView" class="view active" aria-label="Map">
+        <div id="map" class="map"></div>
+        <button id="layerBtn" class="map-control top-right" type="button" aria-label="Open map layers">☰</button>
+        <button id="downloadAreaBtn" class="map-control top-right second" type="button" aria-label="Download map area">⇩</button>
+        <button id="gpsBtn" class="map-control bottom-right upper" type="button" aria-label="Recenter GPS">⌖</button>
+        <button id="dropWaypointBtn" class="fab" type="button" aria-label="Drop waypoint">＋</button>
+        <button id="trackToggleBtn" class="track-float" type="button" aria-label="Start track recording">
+          <span id="trackBlink" class="record-dot"></span>
+          <span id="trackButtonText">Start Track</span>
+        </button>
+      </section>
+
+      <section id="waypointsView" class="view panel-view" aria-label="Waypoints">
+        <div class="panel-screen">
+          <div class="panel-title-row">
+            <h2>Waypoints</h2>
+            <button id="waypointRefreshBtn" class="button small" type="button">Sync</button>
+          </div>
+          <div class="field-row">
+            <input id="waypointSearch" class="input" type="search" placeholder="Search waypoints" />
+            <select id="waypointSort" class="input compact" aria-label="Sort waypoints">
+              <option value="date">Date</option>
+              <option value="distance">Distance</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+          <div id="waypointList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tracksView" class="view panel-view" aria-label="Tracks">
+        <div class="panel-screen">
+          <div class="panel-title-row">
+            <h2>Tracks</h2>
+            <button id="trackRefreshBtn" class="button small" type="button">Sync</button>
+          </div>
+          <div id="trackList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="syncView" class="view panel-view" aria-label="Sync">
+        <div class="panel-screen">
+          <h2>Sync</h2>
+          <div class="stat-grid">
+            <div class="stat"><b id="lastSyncStat">Never</b><span>Last Sync</span></div>
+            <div class="stat"><b id="pendingSyncStat">0</b><span>Pending</span></div>
+            <div class="stat"><b id="networkStat">Checking</b><span>Network</span></div>
+          </div>
+          <button id="manualSyncBtn" class="button wide" type="button">Run Manual Sync</button>
+          <h3>Error Log</h3>
+          <div id="syncLog" class="log-box"></div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view panel-view" aria-label="Settings">
+        <div class="panel-screen">
+          <h2>Settings</h2>
+          <form id="settingsForm" class="settings-form">
+            <label>GAS Endpoint URL<input id="gasUrl" class="input" type="url" placeholder="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec" /></label>
+            <label>GAS Auth Token<input id="gasToken" class="input" type="password" autocomplete="off" /></label>
+            <label>GPS sample interval seconds<input id="gpsInterval" class="input" type="number" min="2" max="60" step="1" /></label>
+            <label>Default map layer
+              <select id="defaultLayer" class="input">
+                <option value="street">Street</option>
+                <option value="satellite">Satellite</option>
+                <option value="topo">Topo</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </label>
+            <label>Distance units
+              <select id="distanceUnits" class="input">
+                <option value="miles">Miles</option>
+                <option value="kilometers">Kilometers</option>
+              </select>
+            </label>
+            <label class="switch-row"><span>Keep screen awake while tracking</span><input id="wakeLock" type="checkbox" /></label>
+            <button class="button wide" type="submit">Save and Validate</button>
+          </form>
+          <button id="clearLocalBtn" class="button danger wide" type="button">Clear All Local Data</button>
+          <p class="version-line">App version <span id="appVersion">0.0.0</span></p>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Primary">
+      <button class="nav-btn active" data-view="mapView" type="button">Map</button>
+      <button class="nav-btn" data-view="waypointsView" type="button">Waypoints</button>
+      <button class="nav-btn" data-view="tracksView" type="button">Tracks</button>
+      <button class="nav-btn" data-view="syncView" type="button">Sync</button>
+      <button class="nav-btn" data-view="settingsView" type="button">Settings</button>
+    </nav>
+
+    <div id="sheetOverlay" class="sheet-overlay" hidden></div>
+    <section id="bottomSheet" class="bottom-sheet" aria-modal="true" role="dialog" aria-label="Details" hidden>
+      <div class="sheet-handle"></div>
+      <div id="sheetContent" class="sheet-content"></div>
+    </section>
+
+    <section id="modalOverlay" class="modal-overlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3 id="modalTitle"></h3>
+        <p id="modalMessage"></p>
+        <div id="modalFields"></div>
+        <div class="modal-actions">
+          <button id="modalCancel" class="button ghost" type="button">Cancel</button>
+          <button id="modalConfirm" class="button" type="button">Confirm</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toastHost" class="toast-host" aria-live="polite"></div>
+    <button id="installBanner" class="install-banner" type="button" hidden>Add HuntTrack to Home Screen</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

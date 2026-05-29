@@ -1,0 +1,130 @@
+import { initMap, openLayerSelector, recenterGps, downloadVisibleArea } from './map.js';
+import { dropAtCurrentLocation, createWaypointAt, refreshWaypoints, renderWaypointList } from './waypoints.js';
+import { toggleRecording, renderTrackList } from './tracks.js';
+import { initSync, syncNow, validateEndpoint, updateSyncStats } from './sync.js';
+import { switchView, toast, confirmModal } from './ui.js';
+import { clearAllData } from './storage.js';
+
+const APP_VERSION = '1.0.0';
+let deferredInstallPrompt = null;
+
+/** Initialize app shell and modules. */
+async function init() {
+  document.getElementById('appVersion').textContent = APP_VERSION;
+  loadSettingsForm();
+  registerServiceWorker();
+  bindNavigation();
+  bindControls();
+  setupInstallPrompt();
+
+  initMap({ onLongPress: createWaypointAt });
+  await refreshWaypoints();
+  await renderTrackList();
+  initSync();
+  updateSyncStats();
+}
+
+/** Register service worker for PWA and offline behavior. */
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('./service-worker.js');
+    } catch (error) {
+      toast('Offline cache could not start', 'error');
+    }
+  }
+}
+
+/** Wire bottom navigation. */
+function bindNavigation() {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchView(btn.dataset.view);
+      if (btn.dataset.view === 'waypointsView') renderWaypointList();
+      if (btn.dataset.view === 'tracksView') renderTrackList();
+      if (btn.dataset.view === 'syncView') updateSyncStats();
+    });
+  });
+}
+
+/** Wire all primary buttons and forms. */
+function bindControls() {
+  document.getElementById('dropWaypointBtn').addEventListener('click', dropAtCurrentLocation);
+  document.getElementById('gpsBtn').addEventListener('click', recenterGps);
+  document.getElementById('layerBtn').addEventListener('click', openLayerSelector);
+  document.getElementById('downloadAreaBtn').addEventListener('click', downloadVisibleArea);
+  document.getElementById('trackToggleBtn').addEventListener('click', toggleRecording);
+  document.getElementById('manualSyncBtn').addEventListener('click', () => syncNow(true));
+  document.getElementById('waypointRefreshBtn').addEventListener('click', () => syncNow(true));
+  document.getElementById('trackRefreshBtn').addEventListener('click', () => syncNow(true));
+  document.getElementById('waypointSearch').addEventListener('input', () => renderWaypointList());
+  document.getElementById('waypointSort').addEventListener('change', () => renderWaypointList());
+  document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+  document.getElementById('clearLocalBtn').addEventListener('click', clearLocal);
+}
+
+/** Load settings from localStorage into fields. */
+function loadSettingsForm() {
+  document.getElementById('gasUrl').value = localStorage.getItem('hunttrack.gasUrl') || '';
+  document.getElementById('gasToken').value = localStorage.getItem('hunttrack.gasToken') || '';
+  document.getElementById('gpsInterval').value = localStorage.getItem('hunttrack.gpsInterval') || '5';
+  document.getElementById('defaultLayer').value = localStorage.getItem('hunttrack.layer') || 'street';
+  document.getElementById('distanceUnits').value = localStorage.getItem('hunttrack.units') || 'miles';
+  document.getElementById('wakeLock').checked = localStorage.getItem('hunttrack.wakeLock') !== 'false';
+}
+
+/** Save settings and validate GAS. */
+async function saveSettings(event) {
+  event.preventDefault();
+  const url = document.getElementById('gasUrl').value.trim();
+  const token = document.getElementById('gasToken').value.trim();
+  localStorage.setItem('hunttrack.gasUrl', url);
+  localStorage.setItem('hunttrack.gasToken', token);
+  localStorage.setItem('hunttrack.gpsInterval', document.getElementById('gpsInterval').value || '5');
+  localStorage.setItem('hunttrack.layer', document.getElementById('defaultLayer').value);
+  localStorage.setItem('hunttrack.units', document.getElementById('distanceUnits').value);
+  localStorage.setItem('hunttrack.wakeLock', String(document.getElementById('wakeLock').checked));
+  if (!url || !token) {
+    toast('Settings saved locally. GAS URL and token are required for sync.', 'error');
+    return;
+  }
+  try {
+    await validateEndpoint(url, token);
+    toast('Connection validated');
+  } catch (error) {
+    toast('Connection failed — check Settings', 'error');
+  }
+}
+
+/** Clear IndexedDB app data after confirmation. */
+async function clearLocal() {
+  const ok = await confirmModal({ title: 'Clear Local Data', message: 'This removes local waypoints, tracks, cached manifests, and sync logs on this device.', confirmText: 'Clear' });
+  if (!ok) return;
+  await clearAllData();
+  await refreshWaypoints();
+  await renderTrackList();
+  await updateSyncStats();
+  toast('Local data cleared');
+}
+
+/** Setup custom add-to-home-screen prompt. */
+function setupInstallPrompt() {
+  const banner = document.getElementById('installBanner');
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (!sessionStorage.getItem('hunttrack.installShown')) {
+      banner.hidden = false;
+      sessionStorage.setItem('hunttrack.installShown', 'true');
+    }
+  });
+  banner.addEventListener('click', async () => {
+    banner.hidden = true;
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);

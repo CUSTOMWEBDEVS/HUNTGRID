@@ -1,0 +1,140 @@
+# HuntTrack
+
+HuntTrack is a mobile-first, offline-capable hunting map and scouting PWA built with vanilla HTML, CSS, JavaScript, Leaflet, IndexedDB, a Service Worker, Google Sheets, and Google Apps Script.
+
+## What is included
+
+- Full-screen Leaflet map
+- Street, satellite, topo, and hybrid layers
+- GPS status and recentering
+- Pulsing GPS location marker
+- Waypoint drop by GPS button or map long press
+- Waypoint edit, delete, list, search, sort, and native map navigation
+- Track recording with distance and duration
+- Track history, detail view, delete, and map rendering
+- IndexedDB offline storage
+- Cache-first service worker for static files and map tiles
+- Visible-map offline tile download
+- Cached-area footprint display
+- Google Sheets + Apps Script JSONP sync backend
+- Settings panel for endpoint, token, GPS interval, units, and wake lock
+- Custom install prompt
+- Rugged mobile UI with no framework dependency
+
+## File tree
+
+```text
+/
+├── index.html
+├── manifest.json
+├── service-worker.js
+├── css/app.css
+├── js/app.js
+├── js/map.js
+├── js/sync.js
+├── js/storage.js
+├── js/waypoints.js
+├── js/tracks.js
+├── js/layers.js
+├── js/ui.js
+├── assets/icons/icon-192.svg
+├── assets/icons/icon-512.svg
+├── assets/markers/*.svg
+└── gas/Code.gs
+```
+
+## Local testing
+
+Because this is a PWA, do not open `index.html` directly from the file system. Use a local static server.
+
+```bash
+python -m http.server 8080
+```
+
+Then open:
+
+```text
+http://localhost:8080
+```
+
+For GPS and service worker behavior on a phone, use HTTPS hosting such as GitHub Pages.
+
+## GitHub Pages deployment
+
+1. Create a GitHub repository.
+2. Upload all project files to the repo root.
+3. Go to **Settings → Pages**.
+4. Set source to the main branch and root folder.
+5. Open the generated GitHub Pages URL.
+6. Add it to your phone home screen when prompted.
+
+## Google Sheets setup
+
+1. Create a new Google Sheet.
+2. Rename or leave the first tab alone; the Apps Script will create and fix the required tabs.
+3. Go to **Extensions → Apps Script**.
+4. Paste the contents of `gas/Code.gs`.
+5. Save the project.
+
+The required tabs are:
+
+- `Waypoints`
+- `Tracks`
+- `Settings`
+- `SyncLog`
+
+The script creates headers automatically on first request.
+
+## Set the auth token
+
+In Apps Script:
+
+1. Open `gas/Code.gs`.
+2. Change this line inside `setHuntTrackToken()`:
+
+```javascript
+PropertiesService.getScriptProperties().setProperty('HUNTTRACK_TOKEN', 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN');
+```
+
+3. Replace the token string with a long random token.
+4. Run `setHuntTrackToken()` once from the Apps Script editor.
+5. Approve permissions.
+
+## Deploy the GAS backend
+
+1. Click **Deploy → New deployment**.
+2. Select **Web app**.
+3. Execute as: **Me**.
+4. Who has access: **Anyone**.
+5. Deploy.
+6. Copy the web app URL ending in `/exec`.
+
+## Configure the app
+
+1. Open HuntTrack.
+2. Go to **Settings**.
+3. Paste the GAS Web App URL.
+4. Paste the same auth token you set in Apps Script.
+5. Click **Save and Validate**.
+
+If validation succeeds, sync is ready.
+
+## Important note about CORS
+
+Google Apps Script web apps do not support normal CORS headers for browser `fetch()` from GitHub Pages. HuntTrack uses JSONP for browser sync, which is why save and delete operations are sent through the `action` and `payload` query parameters. The Apps Script also supports POST for direct API clients.
+
+## Offline behavior
+
+After first load, the app shell works offline. Map tiles are available offline only after they have been viewed or downloaded using the visible-area download button. Mobile browsers enforce storage limits, so do not download very large areas at high zoom levels unless you have enough device storage.
+
+## Recommended production improvements
+
+The included build is complete and functional, but a commercial-grade hunting app would normally add:
+
+- Real licensed parcel and land ownership data
+- More controlled tile-pack sizing and quota warnings
+- User accounts
+- Encrypted sync tokens
+- Photo upload storage
+- GPX/KML import and export
+- Server-side API instead of JSONP
